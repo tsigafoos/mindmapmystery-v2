@@ -1,6 +1,6 @@
 # Mind Map Mystery — Project Memory
 
-**Last Updated:** 2026-04-22 09:45 UTC
+**Last Updated:** 2026-04-22 21:05 UTC
 
 ## Game Overview
 
@@ -32,6 +32,9 @@
 - [x] Theme/CSS variables set up (theme.css)
 - [x] Basic ForceGraph visualization working (App.tsx)
 - [x] Dev server running at http://localhost:5173/
+- [x] GitHub repository created and code pushed
+  - [x] Remote configured: `https://github.com/tsigafoos/mindmapmystery-v2.git`
+  - [x] Initial commit pushed to origin/main
 - [ ] ForceGraph component (modular)
 - [ ] UI components (CluePanel, GuessInput, Timer)
 - [ ] Game state management hooks
@@ -41,17 +44,20 @@
 
 ## Current State
 
-**Status:** Development environment ready, basic 3D visualization working
+**Status:** Development environment ready, code published to GitHub, basic 3D visualization working
 
-**Working:** 
-- Project scaffolded with Vite + React + TypeScript
-- Dependencies installed (3d-force-graph, three)
-- Core types defined (`src/types/game.ts`)
-- Theme CSS created with dark space aesthetic (`src/styles/theme.css`)
-- Basic 3D force graph rendering in App.tsx
-- Dev server running at http://localhost:5173/
-- Sample data loaded (center node + 12 related words)
-- Click interaction on nodes (logs to console)
+**Repository:** https://github.com/tsigafoos/mindmapmystery-v2
+
+**What's Working:** 
+- ✅ Project scaffolded with Vite + React + TypeScript
+- ✅ Dependencies installed (3d-force-graph, three)
+- ✅ Core types defined (`src/types/game.ts`)
+- ✅ Theme CSS created with dark space aesthetic (`src/styles/theme.css`)
+- ✅ Basic 3D force graph rendering in App.tsx
+- ✅ Dev server running at http://localhost:5173/
+- ✅ Sample data loaded (center node + 12 related words)
+- ✅ Click interaction on nodes (logs to console)
+- ✅ GitHub repository created and initial commit pushed
 
 **Visuals Active:**
 - Deep space gradient background
@@ -60,7 +66,7 @@
 - Orbit/rotate with mouse drag
 - Click nodes to "reveal" (turns gray)
 
-**Next Phase:** Build out UI components and game logic
+**Next Phase:** Build out modular UI components and game state management
 
 ---
 
@@ -119,3 +125,13 @@ Plus all standard Vite React TypeScript dependencies.
 - Next step: Build out UI components and game state management
 - Consider using a simple word dataset to start (can expand later)
 - Dev server running at http://localhost:5173/
+
+---
+
+## Deployment History
+
+| Date | Action | Status |
+|------|--------|--------|
+| 2026-04-22 | Project initialized locally | ✅ Complete |
+| 2026-04-22 | GitHub repo `tsigafoos/mindmapmystery-v2` created | ✅ Complete |
+| 2026-04-22 | Initial commit pushed to GitHub | ✅ Complete |
