@@ -60,7 +60,10 @@ export interface RelatedWord {
   word: string;
   strength: number; // 0-1
   category: WordCategory;
+  color?: string;
 }
+
+export type NodeColor = 'blue' | 'cyan' | 'green' | 'yellow' | 'pink' | 'purple' | 'orange' | 'red';
 
 export type GameAction =
   | { type: 'REVEAL_NODE'; nodeId: string }
@@ -75,6 +78,10 @@ export interface GraphNodeObject extends WordNode {
   vx?: number;
   vy?: number;
   vz?: number;
+  fx?: number;
+  fy?: number;
+  fz?: number;
+  color?: string;
 }
 
 export interface ThreeNodeObject {

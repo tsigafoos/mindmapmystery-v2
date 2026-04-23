@@ -1,24 +1,10 @@
-import { useRef, useEffect, useCallback } from 'react';
-import { forceSimulation, forceManyBody, forceLink, forceCenter } from 'd3-force';
+import { useEffect } from 'react';
 import type { GraphData, WordNode } from '../../types/game';
 
 interface SimulationNode extends WordNode {
   x: number;
   y: number;
   z: number;
-  vx?: number;
-  vy?: number;
-  vz?: number;
-  fx?: number | null;
-  fy?: number | null;
-  fz?: number | null;
-}
-
-interface SimulationLink {
-  source: string | SimulationNode;
-  target: string | SimulationNode;
-  strength: number;
-  distance: number;
 }
 
 interface UseForceGraphOptions {
@@ -27,64 +13,52 @@ interface UseForceGraphOptions {
   isActive: boolean;
 }
 
+// Create a proper 3D spherical distribution with depth
+function calculate3DPositions(nodes: WordNode[]): SimulationNode[] {
+  const centerNode = nodes.find(n => n.id === 'center');
+  const otherNodes = nodes.filter(n => n.id !== 'center');
+  
+  // Sort by strength - strongest closest to center
+  const sortedNodes = [...otherNodes].sort((a, b) => b.relationshipStrength - a.relationshipStrength);
+  
+  return nodes.map((node) => {
+    if (node.id === 'center') {
+      return { ...node, x: 0, y: 0, z: 0 };
+    }
+    
+    const idx = sortedNodes.findIndex(n => n.id === node.id);
+    const total = sortedNodes.length;
+    
+    // Fibonacci sphere for even distribution
+    const phi = Math.acos(1 - 2 * (idx + 0.5) / total);
+    const theta = Math.PI * (1 + Math.sqrt(5)) * (idx + 0.5);
+    
+    // Distance based on strength - 25 to 70 range
+    const distance = 25 + (1 - node.relationshipStrength) * 45;
+    
+    const x = distance * Math.sin(phi) * Math.cos(theta);
+    const y = distance * Math.sin(phi) * Math.sin(theta);
+    const z = distance * Math.cos(phi);
+    
+    return {
+      ...node,
+      x: Math.round(x * 10) / 10,
+      y: Math.round(y * 10) / 10,
+      z: Math.round(z * 10) / 10,
+    };
+  });
+}
+
 export function useForceGraph(options: UseForceGraphOptions) {
   const { graphData, onPositionsUpdate, isActive } = options;
-  const simulationRef = useRef<any>(null);
-  const nodesRef = useRef<SimulationNode[]>([]);
 
   useEffect(() => {
     if (!isActive) return;
 
-    const nodes: SimulationNode[] = graphData.nodes.map(n => ({
-      ...n,
-      x: (Math.random() - 0.5) * 200,
-      y: (Math.random() - 0.5) * 200,
-      z: (Math.random() - 0.5) * 100,
-    }));
-
-    const links: SimulationLink[] = graphData.links.map(l => ({
-      source: l.source,
-      target: l.target,
-      strength: l.strength,
-      distance: 50 + (1 - l.strength) * 100,
-    }));
-
-    // Fix center node at origin
-    const centerNode = nodes.find(n => n.id === 'center');
-    if (centerNode) {
-      centerNode.fx = 0;
-      centerNode.fy = 0;
-      centerNode.fz = 0;
-    }
-
-    nodesRef.current = nodes;
-
-    const simulation = forceSimulation(nodes)
-      .force('charge', forceManyBody().strength(-300))
-      .force('link', forceLink(links).id((d: any) => d.id).strength(1))
-      .force('center', forceCenter(0, 0))
-      .alphaDecay(0.02)
-      .velocityDecay(0.3);
-
-    simulation.on('tick', () => {
-      onPositionsUpdate([...nodes]);
-    });
-
-    simulationRef.current = simulation;
-
-    // Warm up simulation
-    simulation.tick(30);
-
-    return () => {
-      simulation.stop();
-    };
-  }, [graphData, isActive, onPositionsUpdate]);
-
-  const restart = useCallback(() => {
-    simulationRef.current?.alpha(1).restart();
-  }, []);
-
-  return { restart };
+    const nodesWithPositions = calculate3DPositions(graphData.nodes);
+    onPositionsUpdate(nodesWithPositions);
+    
+  }, [graphData.nodes.length, isActive]);
 }
 
-export type { SimulationNode, SimulationLink };
+export type { SimulationNode };

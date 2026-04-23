@@ -1,6 +1,6 @@
 # Mind Map Mystery — Project Memory
 
-**Last Updated:** 2026-04-22 21:05 UTC
+**Last Updated:** 2026-04-23 (Environment Setup Complete)
 
 ## Game Overview
 
@@ -77,6 +77,27 @@
 - Flipped hint cards with gradient backgrounds in sidebar
 
 **Next Phase:** Polish, bug fixes, additional word datasets
+
+---
+
+## Environment Setup Status (New Machine)
+
+| Task | Status |
+|------|--------|
+| Dependencies installed (`npm install`) | ✅ Complete |
+| TypeScript errors fixed | ✅ Complete |
+| Project builds successfully | ✅ Complete |
+| Dev server running | ✅ Complete at http://localhost:5174/ |
+
+### TypeScript Fixes Applied:
+1. Added `@types/three` package
+2. Added `color`, `fx`, `fy`, `fz` properties to `GraphNodeObject` interface
+3. Added `NodeColor` type export
+4. Fixed `NodeJS.Timeout` → `ReturnType<typeof setInterval>`
+5. Fixed unused imports across multiple files
+6. Added `category` property to all `RelatedWord` objects
+7. Fixed ForceGraph3D initialization pattern
+8. Fixed FormEvent type import for verbatimModuleSyntax
 
 ---
 

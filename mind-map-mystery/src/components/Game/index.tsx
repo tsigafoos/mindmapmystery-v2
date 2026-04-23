@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import type { GameConfig, WordNode, RelatedWord, RevealedClue } from '../../types/game';
+import type { GameConfig, WordNode, RelatedWord } from '../../types/game';
 import { useGameState } from '../../hooks/useGameState';
 import { categorizeWord, CATEGORY_BASE_COLORS } from '../../utils/thematicColors';
 import type { WordCategory } from '../../types/game';
@@ -106,7 +106,6 @@ export default function Game() {
   }, [state.centerWord, usedHints, state.nodes]);
 
   const isHintUsed = (hintId: number) => usedHints.some(h => h.id === hintId);
-  const canUseHints = true;
 
   // Handle guess submission
   const handleGuessSubmit = useCallback((e: React.FormEvent) => {

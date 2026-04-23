@@ -3,7 +3,7 @@
  * Text input at bottom for word guesses
  */
 
-import React, { useState, useCallback, FormEvent } from 'react';
+import React, { useState, useCallback, type FormEvent } from 'react';
 import '../../styles/theme.css';
 
 interface GuessInputProps {

@@ -1,11 +1,54 @@
-import React, { useState, useCallback } from 'react';
-import { View, StyleSheet, Dimensions, Text, ActivityIndicator } from 'react-native';
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, StyleSheet, Text, ActivityIndicator } from 'react-native';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Stars } from '@react-three/drei';
+import { OrbitControls } from '@react-three/drei';
 import type { GraphData, WordNode } from '../../types/game';
 import { useForceGraph, SimulationNode } from './ForceGraphSystem';
 import { NodeMesh } from './NodeMesh';
 import { LinkLine } from './LinkLine';
+
+// Static star field - no rotation
+function StarField() {
+  const [positions, colors] = useMemo(() => {
+    const count = 500;
+    const positions = new Float32Array(count * 3);
+    const colors = new Float32Array(count * 3);
+    
+    for (let i = 0; i < count; i++) {
+      const i3 = i * 3;
+      positions[i3] = (Math.random() - 0.5) * 1000;
+      positions[i3 + 1] = (Math.random() - 0.5) * 1000;
+      positions[i3 + 2] = (Math.random() - 0.5) * 1000;
+      
+      const isCyan = Math.random() > 0.5;
+      colors[i3] = isCyan ? 0.4 : 0.6;
+      colors[i3 + 1] = isCyan ? 0.95 : 0.4;
+      colors[i3 + 2] = 1;
+    }
+    
+    return [positions, colors];
+  }, []);
+
+  return (
+    <points>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          count={positions.length / 3}
+          array={positions}
+          itemSize={3}
+        />
+        <bufferAttribute
+          attach="attributes-color"
+          count={colors.length / 3}
+          array={colors}
+          itemSize={3}
+        />
+      </bufferGeometry>
+      <pointsMaterial size={2} vertexColors transparent opacity={0.8} />
+    </points>
+  );
+}
 
 interface Graph3DProps {
   graphData: GraphData;
@@ -45,23 +88,19 @@ export function Graph3D({ graphData, revealedNodeIds, onNodePress }: Graph3DProp
         </View>
       )}
       <Canvas
-        camera={{ position: [0, 0, 300], fov: 60 }}
+        camera={{ position: [80, 60, 250], fov: 55, near: 1, far: 2000 }}
         style={styles.canvas}
-        gl={{ alpha: true, antialias: true }}
+        gl={{ alpha: false, antialias: true }}
+        onCreated={(state) => {
+          state.gl.setClearColor('#0a0a1f');
+        }}
       >
-        <ambientLight intensity={0.3} />
-        <pointLight position={[100, 100, 100]} intensity={0.8} color="#64f4f4" />
-        <pointLight position={[-100, -100, 100]} intensity={0.5} color="#a464f4" />
+        <ambientLight intensity={0.4} />
+        <pointLight position={[100, 100, 100]} intensity={1.0} color="#64f4f4" />
+        <pointLight position={[-100, -100, 50]} intensity={0.6} color="#a464f4" />
+        <pointLight position={[0, 0, 100]} intensity={0.5} color="#ffffff" />
 
-        <Stars
-          radius={500}
-          depth={50}
-          count={1000}
-          factor={4}
-          saturation={0.8}
-          fade
-          speed={0.5}
-        />
+        <StarField />
 
         {graphData.links.map((link, index) => (
           <LinkLine key={`link-${index}`} link={link} nodes={simulationNodes} />
@@ -81,9 +120,8 @@ export function Graph3D({ graphData, revealedNodeIds, onNodePress }: Graph3DProp
           enablePan={false}
           enableZoom={true}
           enableRotate={true}
-          autoRotate
-          autoRotateSpeed={0.5}
-          minDistance={150}
+          autoRotate={false}
+          minDistance={120}
           maxDistance={500}
         />
       </Canvas>

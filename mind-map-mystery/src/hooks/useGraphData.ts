@@ -110,6 +110,7 @@ export function transformToGraphData(
       word: centerWord,
       relationshipStrength: 1,
       isRevealed: false,
+      category: 'uncategorized',
       color: 'cyan',
       fx: 0,
       fy: 0,
@@ -165,21 +166,21 @@ export function getNodeVisualProps(
     size,
     opacity: isHovered ? 1 : 0.9,
     glowIntensity: isHovered ? 1 : 0.7,
-    color: getNodeColorHex(node.color),
+    color: getNodeColorHex((node as any).color),
   };
 }
 
 /**
  * Get hex color for node type
  */
-function getNodeColorHex(color: WordNode['color']): string {
+function getNodeColorHex(color: string | undefined): string {
   const colors: Record<string, string> = {
     cyan: '#64f4f4',
     magenta: '#f464f4',
     violet: '#a464f4',
     teal: '#64f4c8',
   };
-  return colors[color] || colors.cyan;
+  return colors[color || 'cyan'] || colors.cyan;
 }
 
 /**

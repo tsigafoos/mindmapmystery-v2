@@ -3,7 +3,7 @@
  * Manages the complete game state and logic
  */
 
-import { useState, useCallback, useReducer, useEffect } from 'react';
+import { useCallback, useReducer, useEffect } from 'react';
 import type {
   GameState,
   GameConfig,

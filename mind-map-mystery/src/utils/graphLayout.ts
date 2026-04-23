@@ -51,7 +51,6 @@ export function configureForceGraph(
   const finalConfig = { ...DEFAULT_GRAPH_CONFIG, ...config };
 
   return graph
-    .linkDistance(finalConfig.linkDistance)
     .d3Force('charge', null) // Remove default charge
     .d3Force('charge', (window as any).d3?.forceManyBody?.().strength(finalConfig.nodeCharge))
     .d3Force('center', null) // Remove default center
@@ -67,7 +66,7 @@ export function configureForceGraph(
  */
 export function createGraphData(
   centerWord: string,
-  relatedWords: Array<{ word: string; strength: number; color: string }>
+  relatedWords: Array<{ word: string; strength: number; category: string }>
 ): GraphData {
   // Create center node (invisible, just for force layout)
   // We'll render the center orb separately for visual effect
@@ -77,6 +76,7 @@ export function createGraphData(
       word: centerWord,
       relationshipStrength: 1,
       isRevealed: false,
+      category: 'uncategorized',
       color: 'cyan', // Default, will be overridden by visual
       x: 0,
       y: 0,
@@ -94,7 +94,8 @@ export function createGraphData(
       word: related.word,
       relationshipStrength: related.strength,
       isRevealed: false,
-      color: related.color as GraphNodeObject['color'],
+      category: related.category as any,
+      color: 'cyan',
     });
   });
 

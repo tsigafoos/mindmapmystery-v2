@@ -12,8 +12,8 @@ const loadThree = async () => {
   return module;
 };
 
-// Detect mobile
-const isMobile = () => window.innerWidth < 768;
+// Detect mobile - used for responsive camera positioning
+const checkMobile = () => window.innerWidth < 768;
 
 // Game visual settings - physics enabled with tiered layout
 const GAME_SETTINGS = {
@@ -285,7 +285,7 @@ export default function GameGraph({ graphData, onNodeClick, onNodeHover, reveale
     }
 
     // Center node fixed at origin
-    const centerNode = nodes.find((n: any) => n.id === 'center');
+    const centerNode = nodes.find((n: any) => n.id === 'center') as any;
     if (centerNode) {
       centerNode.fx = 0;
       centerNode.fy = 0;
@@ -296,7 +296,7 @@ export default function GameGraph({ graphData, onNodeClick, onNodeHover, reveale
     if (!cameraCenteredRef.current) {
       cameraCenteredRef.current = true;
       setTimeout(() => {
-        const isMobileView = window.innerWidth < 768;
+        const isMobileView = checkMobile();
         const cameraZ = isMobileView ? 300 : 500;
         graph.cameraPosition(
           { x: 0, y: 0, z: cameraZ },

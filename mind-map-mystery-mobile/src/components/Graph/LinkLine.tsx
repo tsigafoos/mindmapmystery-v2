@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
-import { Vector3, CatmullRomCurve3 } from 'three';
-import { Line } from '@react-three/drei';
+import * as THREE from 'three';
 import type { SimulationNode } from './ForceGraphSystem';
 import type { GraphLink } from '../../types/game';
 
@@ -16,26 +15,52 @@ export function LinkLine({ link, nodes }: LinkLineProps) {
 
     if (!sourceNode || !targetNode) return [];
 
-    const start = new Vector3(sourceNode.x || 0, sourceNode.y || 0, sourceNode.z || 0);
-    const end = new Vector3(targetNode.x || 0, targetNode.y || 0, targetNode.z || 0);
+    const start = new THREE.Vector3(
+      Number.isFinite(sourceNode.x) ? sourceNode.x : 0,
+      Number.isFinite(sourceNode.y) ? sourceNode.y : 0,
+      Number.isFinite(sourceNode.z) ? sourceNode.z : 0
+    );
+    const end = new THREE.Vector3(
+      Number.isFinite(targetNode.x) ? targetNode.x : 0,
+      Number.isFinite(targetNode.y) ? targetNode.y : 0,
+      Number.isFinite(targetNode.z) ? targetNode.z : 0
+    );
 
-    // Create slight curve
+    // Create a curve that bows outward from center
     const mid = start.clone().add(end).multiplyScalar(0.5);
-    mid.y += 10; // Add slight arc
+    const toCenter = mid.clone().normalize();
+    const curveAmount = 8 + (1 - link.strength) * 12;
+    mid.add(toCenter.multiplyScalar(curveAmount));
 
-    const curve = new CatmullRomCurve3([start, mid, end]);
-    return curve.getPoints(20);
+    const curve = new THREE.CatmullRomCurve3([start, mid, end]);
+    return curve.getPoints(30);
   }, [link, nodes]);
 
-  if (points.length === 0) return null;
+  const geometry = useMemo(() => {
+    if (points.length === 0) return null;
+    
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(points.length * 3);
+    points.forEach((point, i) => {
+      positions[i * 3] = point.x;
+      positions[i * 3 + 1] = point.y;
+      positions[i * 3 + 2] = point.z;
+    });
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    return geometry;
+  }, [points]);
 
+  if (!geometry) return null;
+
+  // Brighter, thicker lines with glow
   return (
-    <Line
-      points={points}
-      color="rgba(100, 244, 244, 0.4)"
-      lineWidth={1}
-      transparent
-      opacity={0.4}
-    />
+    <line geometry={geometry}>
+      <lineBasicMaterial 
+        color="#64f4f4" 
+        transparent 
+        opacity={0.5} 
+        linewidth={2}
+      />
+    </line>
   );
 }

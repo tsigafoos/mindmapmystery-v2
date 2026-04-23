@@ -3,17 +3,14 @@
  * Main 3D visualization using 3d-force-graph
  */
 
-import React, { useRef, useEffect, useCallback, useState } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import ForceGraph3D from '3d-force-graph';
 import * as THREE from 'three';
 import type { GraphData, WordNode, GraphNodeObject } from '../../types/game';
 import {
-  DEFAULT_GRAPH_CONFIG,
   getInitialCameraPosition,
-  CAMERA_SETTINGS,
   getNodeSize,
   getLinkOpacity,
-  getLinkWidth,
 } from '../../utils/graphLayout';
 import '../../styles/theme.css';
 
@@ -38,7 +35,6 @@ export const ForceGraph: React.FC<ForceGraphProps> = ({
   data,
   onNodeClick,
   revealedNodeIds,
-  isGameOver,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<any>(null);
@@ -49,9 +45,9 @@ export const ForceGraph: React.FC<ForceGraphProps> = ({
     if (!containerRef.current) return;
 
     // Initialize ForceGraph3D
-    const graph = ForceGraph3D({
-      controlType: 'orbit',
-    })(containerRef.current);
+    const GraphClass = ForceGraph3D as unknown as new () => any;
+    const graph = new GraphClass();
+    graph(containerRef.current);
 
     graphRef.current = graph;
 
@@ -175,15 +171,15 @@ export const ForceGraph: React.FC<ForceGraphProps> = ({
     });
 
     // Charge force (repulsion)
-    graph.d3Force('charge')?.strength(DEFAULT_GRAPH_CONFIG.nodeCharge);
+    graph.d3Force('charge')?.strength(-200);
 
     // Center force
     graph.d3Force('center', null); // Remove default center
 
     // Warmup
-    graph.warmupTicks(DEFAULT_GRAPH_CONFIG.warmupTicks);
-    graph.cooldownTicks(DEFAULT_GRAPH_CONFIG.cooldownTicks);
-    graph.cooldownTime(DEFAULT_GRAPH_CONFIG.cooldownTime);
+    graph.warmupTicks(100);
+    graph.cooldownTicks(50);
+    graph.cooldownTime(15000);
   };
 
   return (
@@ -211,9 +207,10 @@ function createNodeMesh(
 ): THREE.Object3D {
   const group = new THREE.Group();
 
+  const nodeColor = (node as any).color || 'cyan';
   const color = isRevealed
     ? new THREE.Color(REVEALED_COLOR)
-    : new THREE.Color(NODE_COLORS[node.color] || NODE_COLORS.cyan);
+    : new THREE.Color(NODE_COLORS[nodeColor] || NODE_COLORS.cyan);
 
   const baseSize = getNodeSize(node.relationshipStrength, isRevealed);
   const size = isHovered ? baseSize * 1.2 : baseSize;

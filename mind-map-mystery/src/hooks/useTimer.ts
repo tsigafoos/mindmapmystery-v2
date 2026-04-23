@@ -30,7 +30,7 @@ export function useTimer(options: UseTimerOptions): UseTimerReturn {
   const [isRunning, setIsRunning] = useState(false);
   const [isExpired, setIsExpired] = useState(false);
 
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const onExpireRef = useRef(onExpire);
   const onTickRef = useRef(onTick);
 
