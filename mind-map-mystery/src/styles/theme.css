@@ -1,0 +1,184 @@
+/**
+ * Mind Map Mystery — Color Palette & Theme Variables
+ * Dark space aesthetic with soft neon accents
+ */
+
+:root {
+  /* Background Colors — Deep Space */
+  --bg-deep-space: #0a0a0f;
+  --bg-gradient-start: #0f0f1a;
+  --bg-gradient-end: #1a0f2e;
+  --bg-panel: rgba(15, 15, 26, 0.85);
+
+  /* Node Colors — Soft Neon */
+  --node-cyan: #64f4f4;
+  --node-magenta: #f464f4;
+  --node-violet: #a464f4;
+  --node-teal: #64f4c8;
+
+  /* Center Orb Aura */
+  --center-aura-cyan: #64f4f4;
+  --center-aura-purple: #a464f4;
+  --center-core: #ffffff;
+
+  /* Revealed State */
+  --node-revealed: #404040;
+  --node-revealed-glow: rgba(64, 64, 64, 0.2);
+
+  /* Glow Intensities */
+  --glow-intensity-strong: 0.9;
+  --glow-intensity-medium: 0.6;
+  --glow-intensity-subtle: 0.3;
+  --glow-intensity-none: 0.05;
+
+  /* Text Colors */
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --text-muted: #606060;
+  --text-accent: var(--node-cyan);
+
+  /* UI Colors */
+  --ui-border: rgba(100, 244, 244, 0.2);
+  --ui-border-hover: rgba(100, 244, 244, 0.5);
+  --ui-input-bg: rgba(15, 15, 26, 0.9);
+  --ui-button-bg: rgba(100, 244, 244, 0.15);
+  --ui-button-hover: rgba(100, 244, 244, 0.3);
+
+  /* Status Colors */
+  --status-success: #64f4a0;
+  --status-error: #f46464;
+  --status-warning: #f4c864;
+
+  /* Animation Timings */
+  --pulse-duration: 3s;
+  --reveal-transition: 0.3s;
+  --hover-transition: 0.15s;
+
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+
+  /* Font Sizes */
+  --font-xs: 12px;
+  --font-sm: 14px;
+  --font-md: 16px;
+  --font-lg: 20px;
+  --font-xl: 24px;
+  --font-title: 32px;
+
+  /* Z-Index Layers */
+  --z-graph: 1;
+  --z-ui: 10;
+  --z-modal: 100;
+  --z-tooltip: 1000;
+}
+
+/* Global Styles */
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: radial-gradient(ellipse at center, var(--bg-gradient-start) 0%, var(--bg-deep-space) 50%, var(--bg-gradient-end) 100%);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Glow Animations */
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: var(--glow-intensity-medium);
+    filter: blur(8px);
+  }
+  50% {
+    opacity: var(--glow-intensity-strong);
+    filter: blur(12px);
+  }
+}
+
+@keyframes aura-shift {
+  0% {
+    box-shadow: 0 0 30px 10px var(--center-aura-cyan), 0 0 60px 20px var(--center-aura-purple);
+  }
+  50% {
+    box-shadow: 0 0 40px 15px var(--center-aura-purple), 0 0 70px 25px var(--center-aura-cyan);
+  }
+  100% {
+    box-shadow: 0 0 30px 10px var(--center-aura-cyan), 0 0 60px 20px var(--center-aura-purple);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Utility Classes */
+.glow-cyan {
+  color: var(--node-cyan);
+  text-shadow: 0 0 10px var(--node-cyan);
+}
+
+.glow-magenta {
+  color: var(--node-magenta);
+  text-shadow: 0 0 10px var(--node-magenta);
+}
+
+.glow-violet {
+  color: var(--node-violet);
+  text-shadow: 0 0 10px var(--node-violet);
+}
+
+.glow-teal {
+  color: var(--node-teal);
+  text-shadow: 0 0 10px var(--node-teal);
+}
+
+.pulse-animation {
+  animation: pulse-glow var(--pulse-duration) ease-in-out infinite;
+}
+
+.aura-animation {
+  animation: aura-shift 4s ease-in-out infinite;
+}
+
+.fade-in {
+  animation: fade-in var(--reveal-transition) ease-out;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-deep-space);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ui-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ui-border-hover);
+}
