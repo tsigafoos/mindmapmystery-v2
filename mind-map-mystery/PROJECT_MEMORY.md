@@ -8,11 +8,13 @@
 **Core Purpose:** A word-guessing game where players explore a 3D graph of word relationships to identify a hidden central word.
 
 **Visual Style:**
-- Background: Deep dark space (near-black with subtle purple/navy gradient)
-- Node colors: Soft neon (cyan, magenta, violet, teal)
-- Center orb: White core with shifting cyan-purple aura
-- Unrevealed nodes: Soft glowing with gentle pulsing
-- Revealed nodes: Muted gray with minimal glow
+- Background: Animated starry nebula with cyan/purple twinkling stars and pulsing nebula clouds
+- Node colors: Soft neon (cyan, magenta, violet, teal) based on word categories
+- Center orb: Large cyan/purple glowing sphere
+- Unrevealed nodes: Small glowing spheres with category colors
+- Revealed nodes: Standard glow, hint cards appear in sidebar
+- Links: Curved connections with flowing particle effects
+- 3D Graph: Auto-rotating with mouse drag/zoom controls
 
 ---
 
@@ -35,10 +37,10 @@
 - [x] GitHub repository created and code pushed
   - [x] Remote configured: `https://github.com/tsigafoos/mindmapmystery-v2.git`
   - [x] Initial commit pushed to origin/main
-- [ ] ForceGraph component (modular)
-- [ ] UI components (CluePanel, GuessInput, Timer)
-- [ ] Game state management hooks
-- [ ] Word relationship data
+- [x] ForceGraph component (modular) - GameGraph.tsx created
+- [x] UI components - Game component with header, hints bar, sidebar, guess input
+- [x] Game state management hooks - useGameState hook implemented
+- [x] Word relationship data - thematic categorization with colors
 
 ---
 
@@ -52,21 +54,29 @@
 - ✅ Project scaffolded with Vite + React + TypeScript
 - ✅ Dependencies installed (3d-force-graph, three)
 - ✅ Core types defined (`src/types/game.ts`)
-- ✅ Theme CSS created with dark space aesthetic (`src/styles/theme.css`)
-- ✅ Basic 3D force graph rendering in App.tsx
+- ✅ Game component with full UI layout (Game.tsx, Game.css, GameGraph.tsx)
 - ✅ Dev server running at http://localhost:5173/
-- ✅ Sample data loaded (center node + 12 related words)
-- ✅ Click interaction on nodes (logs to console)
+- ✅ Sample data loaded (center node + 15 related words)
+- ✅ Click nodes to reveal words in sidebar
+- ✅ 3D graph with auto-rotation and mouse controls
 - ✅ GitHub repository created and initial commit pushed
+- ✅ Animated starry nebula background
+- ✅ Hint system with "flip cards" showing hint results
+- ✅ Timer, guesses, and clues display in bottom bar
+- ✅ Curved links with random curvature
+- ✅ Thematic word categorization with color coding
 
 **Visuals Active:**
-- Deep space gradient background
-- White center node ("?????")
-- Colored orbiting nodes (cyan, magenta, violet, teal)
-- Orbit/rotate with mouse drag
-- Click nodes to "reveal" (turns gray)
+- Animated starry nebula with twinkling cyan/purple stars
+- Semi-transparent 3D graph showing stars through background
+- White center node ("photosynthesis")
+- Colored orbiting nodes by category (science=blue, biology=green)
+- Auto-rotation with mouse drag to look around
+- Click nodes to reveal - adds hint cards to sidebar
+- Three hint buttons (first letter, random word, word length)
+- Flipped hint cards with gradient backgrounds in sidebar
 
-**Next Phase:** Build out modular UI components and game state management
+**Next Phase:** Polish, bug fixes, additional word datasets
 
 ---
 
@@ -88,21 +98,13 @@
 |------|---------|--------|
 | `PROJECT_MEMORY.md` | This file — project tracking | ✅ Created |
 | `src/types/game.ts` | Core TypeScript interfaces | ✅ Created |
-| `src/styles/theme.css` | Color palette & glow effects | ✅ Created |
-| `src/components/Graph/ForceGraph.tsx` | Main 3D visualization | ⏳ Pending |
-| `src/components/Graph/NodeSprite.tsx` | Individual node styling | ⏳ Pending |
-| `src/components/Graph/GraphControls.tsx` | Camera controls wrapper | ⏳ Pending |
-| `src/components/UI/CluePanel.tsx` | Right-side revealed clues | ⏳ Pending |
-| `src/components/UI/GuessInput.tsx` | Bottom text input | ⏳ Pending |
-| `src/components/UI/Timer.tsx` | Top corner timer | ⏳ Pending |
-| `src/components/UI/GameHeader.tsx` | Title and status | ⏳ Pending |
-| `src/components/shared/GlowEffects.tsx` | Aura/glow materials | ⏳ Pending |
-| `src/hooks/useGameState.ts` | Game logic state | ⏳ Pending |
-| `src/hooks/useGraphData.ts` | Node/link data generation | ⏳ Pending |
-| `src/hooks/useTimer.ts` | Timer logic | ⏳ Pending |
-| `src/utils/wordRelationships.ts` | Word connection algorithms | ⏳ Pending |
-| `src/utils/graphLayout.ts` | Force graph configuration | ⏳ Pending |
-| `App.tsx` | Basic 3D graph visualization | ✅ Working |
+| `src/components/Game/index.tsx` | Main game component with UI layout | ✅ Created |
+| `src/components/Game/Game.css` | Game styles, starry background, animations | ✅ Created |
+| `src/components/Game/GameGraph.tsx` | 3D force graph visualization | ✅ Created |
+| `src/hooks/useGameState.ts` | Game logic state management | ✅ Created |
+| `src/utils/thematicColors.ts` | Word categorization and color mapping | ✅ Created |
+| `App.tsx` | Main app entry point | ✅ Working |
+| `src/assets/background.jpg` | Background image asset | ✅ Available |
 
 ---
 

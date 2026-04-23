@@ -1,5 +1,5 @@
-import { useEffect, useRef, useCallback, useState } from 'react';
-import type { GraphData, WordNode, GraphLink } from '../../types/game';
+import { useEffect, useRef, useCallback } from 'react';
+import type { GraphData, WordNode } from '../../types/game';
 import { getNodeColor, rgbToHex, categorizeWord } from '../../utils/thematicColors';
 
 const loadForceGraph = async () => {
@@ -35,32 +35,38 @@ const GAME_SETTINGS = {
   links: {
     opacity: 0.4,
     width: 1,
-    firstRingDistance: 60,
-    secondRingDistance: 30,
-    thirdPlusRingDistance: 15,
-    curvature: 0.2,
+    firstRingDistance: 50,
+    secondRingDistance: 35,
+    thirdPlusRingDistance: 20,
+    curvatureMin: 0.1,
+    curvatureMax: 0.4,
     particles: 4,
   },
   physics: {
-    charge: -300,
-    warmupTicks: 30,
-    cooldownTicks: 50,
+    charge: -200,
+    warmupTicks: 40,
+    cooldownTicks: 100,
+    alphaDecay: 0.05,
+    velocityDecay: 0.4,
   },
-  background: '#0a0a1f',
+  background: 'rgba(10, 10, 31, 0.3)',
 };
 
 interface GameGraphProps {
   graphData: GraphData;
   onNodeClick?: (node: WordNode) => void;
+  onNodeHover?: (node: WordNode | null, x?: number, y?: number) => void;
   revealedNodes: string[];
 }
 
-export default function GameGraph({ graphData, onNodeClick, revealedNodes }: GameGraphProps) {
+export default function GameGraph({ graphData, onNodeClick, onNodeHover, revealedNodes }: GameGraphProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<any>(null);
   const threeRef = useRef<any>(null);
   const revealedNodesRef = useRef<Set<string>>(new Set());
   const cleanupRef = useRef<(() => void) | null>(null);
+  const cameraCenteredRef = useRef(false);
+  const linkCurvaturesRef = useRef<Map<string, number>>(new Map());
 
   // Keep ref in sync with prop
   useEffect(() => {
@@ -133,7 +139,13 @@ export default function GameGraph({ graphData, onNodeClick, revealedNodes }: Gam
   // Initialize graph with physics enabled
   useEffect(() => {
     const initGraph = async () => {
+      // Wait for container and data
       if (!containerRef.current || graphRef.current) return;
+      if (!graphData.nodes.length) {
+        // Retry after a short delay if data isn't ready
+        setTimeout(initGraph, 100);
+        return;
+      }
 
       try {
         const [ForceGraph3D, THREE] = await Promise.all([loadForceGraph(), loadThree()]);
@@ -147,71 +159,48 @@ export default function GameGraph({ graphData, onNodeClick, revealedNodes }: Gam
           .linkOpacity(GAME_SETTINGS.links.opacity)
           .linkWidth(GAME_SETTINGS.links.width)
           .linkColor(() => 'rgba(100, 244, 244, 0.4)')
-          .linkCurvature(GAME_SETTINGS.links.curvature)
+          .linkCurvature((link: any) => link.curvature || 0.2)
           .linkDirectionalParticles(GAME_SETTINGS.links.particles)
           .linkDirectionalParticleSpeed(0.01)
           .nodeLabel('word')
           .nodeThreeObject(createNodeObject)
           .warmupTicks(GAME_SETTINGS.physics.warmupTicks)
           .cooldownTicks(GAME_SETTINGS.physics.cooldownTicks)
-          .d3AlphaDecay(0.02)
-          .d3VelocityDecay(0.3)
+          .d3AlphaDecay(GAME_SETTINGS.physics.alphaDecay)
+          .d3VelocityDecay(GAME_SETTINGS.physics.velocityDecay)
+          .enableNavigationControls(true)
           .onNodeClick((node: any) => {
             if (onNodeClick && node.id !== 'center') {
               onNodeClick(node as WordNode);
             }
+          })
+          .onNodeHover((node: any) => {
+            if (onNodeHover) {
+              onNodeHover(node ? (node as WordNode) : null);
+            }
           });
+
+        // Configure orbit controls
+        const controls = graph.controls();
+        if (controls) {
+          controls.enableDamping = true;
+          controls.dampingFactor = 0.05;
+          controls.enableZoom = true;
+          controls.enablePan = false;
+          controls.autoRotate = true;
+          controls.autoRotateSpeed = 0.5;
+        }
 
         graphRef.current = graph;
 
-        // Initial data
-        const nodes = graphData.nodes.map(n => ({
-          ...n,
-          id: n.id,
-          word: n.word || (n as any).label,
-          category: n.category || categorizeWord(n.word || ''),
-        }));
-
-        const links = graphData.links.map(l => ({
-          source: l.source,
-          target: l.target,
-          strength: l.strength,
-        }));
-
-        graph.graphData({ nodes, links });
-
-        // Configure forces with tiered distances
-        graph.d3Force('charge').strength(GAME_SETTINGS.physics.charge);
-        graph.d3Force('link')
-          .distance((link: any) => {
-            const targetNode = nodes.find((n: any) => n.id === link.target);
-            if (!targetNode || targetNode.id === 'center') return GAME_SETTINGS.links.firstRingDistance;
-            const ringLevel = getNodeRingLevel(targetNode.relationshipStrength);
-            switch (ringLevel) {
-              case 1: return GAME_SETTINGS.links.firstRingDistance;
-              case 2: return GAME_SETTINGS.links.secondRingDistance;
-              default: return GAME_SETTINGS.links.thirdPlusRingDistance;
-            }
-          })
-          .strength(1);
-
-        // Center node fixed at origin
-        const centerNode = nodes.find((n: any) => n.id === 'center');
-        if (centerNode) {
-          centerNode.fx = 0;
-          centerNode.fy = 0;
-          centerNode.fz = 0;
+        // Configure renderer with semi-transparent background
+        const renderer = graph.renderer();
+        if (renderer) {
+          renderer.setClearColor(0x0a0a1f, 0.3);
         }
 
-        // Center camera - closer on mobile for better view
-        setTimeout(() => {
-          const cameraZ = isMobile() ? 250 : 400; // Closer on mobile
-          graph.cameraPosition(
-            { x: 0, y: 0, z: cameraZ },
-            { x: 0, y: 0, z: 0 },   // Look at center
-            1000                     // Transition duration ms
-          );
-        }, 600);
+        // Initial data
+        updateGraphData(graph, graphData);
 
         // Handle resize
         const handleResize = () => {
@@ -231,16 +220,92 @@ export default function GameGraph({ graphData, onNodeClick, revealedNodes }: Gam
       }
     };
 
-    initGraph();
+    // Small delay to ensure DOM is ready
+    const timeoutId = setTimeout(initGraph, 50);
 
     return () => {
+      clearTimeout(timeoutId);
       if (cleanupRef.current) {
         cleanupRef.current();
         cleanupRef.current = null;
       }
       graphRef.current = null;
     };
-  }, []); // Empty deps - only run once
+  }, []);
+
+  // Update graph when data changes
+  useEffect(() => {
+    if (graphRef.current && graphData.nodes.length > 0) {
+      updateGraphData(graphRef.current, graphData);
+    }
+  }, [graphData]);
+
+  // Helper function to update graph data
+  const updateGraphData = (graph: any, data: GraphData) => {
+    const nodes = data.nodes.map(n => ({
+      ...n,
+      id: n.id,
+      word: n.word || (n as any).label,
+      category: n.category || categorizeWord(n.word || ''),
+    }));
+
+    const links = data.links.map(l => {
+      const linkKey = `${l.source}-${l.target}`;
+      let curvature = linkCurvaturesRef.current.get(linkKey);
+      if (curvature === undefined) {
+        curvature = GAME_SETTINGS.links.curvatureMin + Math.random() * (GAME_SETTINGS.links.curvatureMax - GAME_SETTINGS.links.curvatureMin);
+        linkCurvaturesRef.current.set(linkKey, curvature);
+      }
+      return {
+        source: l.source,
+        target: l.target,
+        strength: l.strength,
+        curvature,
+      };
+    });
+
+    graph.graphData({ nodes, links });
+
+    // Configure forces only once on initial load
+    if (!graph._forcesConfigured) {
+      graph._forcesConfigured = true;
+      graph.d3Force('charge').strength(GAME_SETTINGS.physics.charge);
+      graph.d3Force('link')
+        .distance((link: any) => {
+          const targetNode = nodes.find((n: any) => n.id === link.target);
+          if (!targetNode || targetNode.id === 'center') return GAME_SETTINGS.links.firstRingDistance;
+          const ringLevel = getNodeRingLevel(targetNode.relationshipStrength);
+          switch (ringLevel) {
+            case 1: return GAME_SETTINGS.links.firstRingDistance;
+            case 2: return GAME_SETTINGS.links.secondRingDistance;
+            default: return GAME_SETTINGS.links.thirdPlusRingDistance;
+          }
+        })
+        .strength(1);
+    }
+
+    // Center node fixed at origin
+    const centerNode = nodes.find((n: any) => n.id === 'center');
+    if (centerNode) {
+      centerNode.fx = 0;
+      centerNode.fy = 0;
+      centerNode.fz = 0;
+    }
+
+    // Center camera only once on initial load
+    if (!cameraCenteredRef.current) {
+      cameraCenteredRef.current = true;
+      setTimeout(() => {
+        const isMobileView = window.innerWidth < 768;
+        const cameraZ = isMobileView ? 300 : 500;
+        graph.cameraPosition(
+          { x: 0, y: 0, z: cameraZ },
+          { x: 0, y: 0, z: 0 },
+          2000
+        );
+      }, 800);
+    }
+  };
 
   return (
     <div

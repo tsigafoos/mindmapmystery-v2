@@ -1,10 +1,9 @@
-import { useState, useCallback, useEffect } from 'react';
-import type { GameConfig, WordNode, RelatedWord } from '../../types/game';
+import { useState, useCallback } from 'react';
+import type { GameConfig, WordNode, RelatedWord, RevealedClue } from '../../types/game';
 import { useGameState } from '../../hooks/useGameState';
-import { categorizeWord } from '../../utils/thematicColors';
+import { categorizeWord, CATEGORY_BASE_COLORS } from '../../utils/thematicColors';
+import type { WordCategory } from '../../types/game';
 import GameGraph from './GameGraph';
-import ProgressPanel from './ProgressPanel';
-import GuessPanel, { type UsedHint } from './GuessPanel';
 import './Game.css';
 
 // Default game configuration with categorized words
@@ -33,16 +32,21 @@ const DEFAULT_CONFIG: GameConfig = {
   relatedWords: DEFAULT_WORDS,
 };
 
-// Game phases
-type GamePhase = 'intro' | 'start' | 'playing' | 'ended';
+interface UsedHint {
+  id: number;
+  text: string;
+  result: string;
+  type: 'letter' | 'node' | 'length';
+}
 
 export default function Game() {
   const [config] = useState<GameConfig>(DEFAULT_CONFIG);
   const [guess, setGuess] = useState('');
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error' | null; message: string } | null>(null);
-  const [gamePhase, setGamePhase] = useState<GamePhase>('intro');
-  const [introProgress, setIntroProgress] = useState(0);
   const [usedHints, setUsedHints] = useState<UsedHint[]>([]);
+  const [showColorKey, setShowColorKey] = useState(false);
+  const [hoveredNode, setHoveredNode] = useState<WordNode | null>(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   const {
     state,
@@ -51,70 +55,63 @@ export default function Game() {
     makeGuess,
     revealedCount,
     totalNodes,
-    startGame,
   } = useGameState({
     config,
-    onGameOver: () => {
-      setGamePhase('ended');
-    },
-    onWin: () => {
-      setGamePhase('ended');
-    },
+    onGameOver: () => {},
+    onWin: () => {},
   });
 
-  // Intro animation effect
-  useEffect(() => {
-    if (gamePhase !== 'intro') return;
-
-    // Simulate intro animation progress
-    const interval = setInterval(() => {
-      setIntroProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setGamePhase('start');
-          return 100;
-        }
-        return prev + 2; // 2% per tick, completes in ~3 seconds
-      });
-    }, 50);
-
-    return () => clearInterval(interval);
-  }, [gamePhase]);
-
-  const handleStart = useCallback(() => {
-    setGamePhase('playing');
-    startGame();
-  }, [startGame]);
-
-  // Handle node click - works in all phases except ended
+  // Handle node click
   const handleNodeClick = useCallback((node: WordNode) => {
-    console.log('Node clicked:', node.word, 'Phase:', gamePhase, 'Already revealed:', node.isRevealed);
-    if (gamePhase === 'ended' || state.isGameOver) return;
-    if (!node.isRevealed) {
+    if (state.isGameOver) return;
+    if (!node.isRevealed && node.id !== 'center') {
       revealNode(node.id);
     }
-  }, [revealNode, state.isGameOver, gamePhase]);
+  }, [revealNode, state.isGameOver]);
 
-  // Reveal a random unrevealed node (for hints)
-  const handleRevealRandomNode = useCallback(() => {
-    if (gamePhase !== 'playing') return;
-    
-    const unrevealedNodes = state.nodes.filter(n => !n.isRevealed);
-    if (unrevealedNodes.length > 0) {
-      const randomIndex = Math.floor(Math.random() * unrevealedNodes.length);
-      revealNode(unrevealedNodes[randomIndex].id);
+  // Handle node hover
+  const handleNodeHover = useCallback((node: WordNode | null, x?: number, y?: number) => {
+    setHoveredNode(node);
+    if (x !== undefined && y !== undefined) {
+      setMousePos({ x, y });
     }
-  }, [revealNode, state.nodes, gamePhase]);
-
-  // Handle using a hint
-  const handleUseHint = useCallback((hint: UsedHint) => {
-    setUsedHints(prev => [...prev, hint]);
   }, []);
+
+  // Handle using a hint - adds a hint card to the sidebar
+  const useHint = useCallback((hintId: number) => {
+    const hints = [
+      { id: 1, text: 'First Letter', getValue: () => `"${state.centerWord.charAt(0).toUpperCase()}"` },
+      { id: 2, text: 'Random Word', getValue: () => {
+        const unrevealedWords = state.nodes.filter(n => !n.isRevealed && n.id !== 'center');
+        if (unrevealedWords.length > 0) {
+          const randomIndex = Math.floor(Math.random() * unrevealedWords.length);
+          return unrevealedWords[randomIndex].word;
+        }
+        return state.nodes.find(n => n.id !== 'center')?.word || '?';
+      }},
+      { id: 3, text: 'Word Length', getValue: () => `${state.centerWord.length} letters` },
+    ];
+
+    const hint = hints.find(h => h.id === hintId);
+    if (!hint || usedHints.some(uh => uh.id === hintId)) return;
+
+    const result = hint.getValue();
+
+    setUsedHints(prev => [...prev, {
+      id: hint.id,
+      text: hint.text,
+      result: result,
+      type: hint.id === 1 ? 'letter' : hint.id === 2 ? 'node' : 'length',
+    }]);
+  }, [state.centerWord, usedHints, state.nodes]);
+
+  const isHintUsed = (hintId: number) => usedHints.some(h => h.id === hintId);
+  const canUseHints = true;
 
   // Handle guess submission
   const handleGuessSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
-    if (!guess.trim() || state.isGameOver || gamePhase !== 'playing') return;
+    if (!guess.trim() || state.isGameOver) return;
 
     const isCorrect = makeGuess(guess.trim());
 
@@ -126,124 +123,140 @@ export default function Game() {
     }
 
     setGuess('');
-  }, [guess, makeGuess, state.isGameOver, gamePhase]);
+  }, [guess, makeGuess, state.isGameOver]);
 
   // Get revealed node IDs
   const revealedNodeIds = state.nodes
     .filter(n => n.isRevealed)
     .map(n => n.id);
 
-  // Determine if graph should be interactive
-  const isGraphInteractive = gamePhase === 'playing';
-  const freezePhysics = gamePhase === 'start' || gamePhase === 'playing' || gamePhase === 'ended';
+  // Get category color for legend
+  const getCategoryColor = (category: WordCategory): string => {
+    const color = CATEGORY_BASE_COLORS[category];
+    return `rgb(${color.r}, ${color.g}, ${color.b})`;
+  };
 
   return (
     <div className="game-container">
-      {/* Header - hidden during intro */}
-      {gamePhase !== 'intro' && (
-        <header className="game-header">
-          <div className="game-title">
-            <span className="game-title-icon">🧠</span>
-            <span>Mind Map Mystery</span>
-          </div>
-          <div className="game-stats">
-            <div className="stat">
-              <span className="stat-label">Time</span>
-              <span className="stat-value">{formatTime(state.timeRemaining)}</span>
-            </div>
-            <div className="stat">
-              <span className="stat-label">Guesses</span>
-              <span className="stat-value">{state.guessCount}</span>
-            </div>
-            <div className="stat">
-              <span className="stat-label">Clues</span>
-              <span className="stat-value">{revealedCount}/{totalNodes}</span>
-            </div>
-          </div>
-          <a href="/test-bench" className="dev-link">
-            Test Bench
-          </a>
-        </header>
-      )}
+      {/* Animated Starry Background */}
+      <div className="stars-container">
+        <div className="stars" />
+        <div className="stars" />
+        <div className="stars" />
+        <div className="nebula" />
+      </div>
+
+      {/* Header - Centered Title */}
+      <header className="game-header">
+        <div className="game-title">
+          <span className="game-title-icon">🧠</span>
+          <span>Mind Map Mystery</span>
+        </div>
+
+        <button 
+          className="color-key-btn"
+          onClick={() => setShowColorKey(true)}
+          title="Color Key"
+        >
+          🎨
+        </button>
+      </header>
+
+      {/* Hints Bar - Below header */}
+      <div className="hints-bar-container">
+        <span className="hints-label">Hints:</span>
+        <div className="hints-chips">
+          {[
+            { id: 1, text: 'First letter', icon: 'A' },
+            { id: 2, text: 'Random word', icon: '?' },
+            { id: 3, text: 'Word length', icon: '#' },
+          ].map(hint => {
+            const used = isHintUsed(hint.id);
+            return (
+              <button
+                key={hint.id}
+                className={`hint-chip ${used ? 'used' : ''}`}
+                onClick={() => !used && useHint(hint.id)}
+                disabled={used}
+                title={hint.text}
+              >
+                <span className="hint-chip-icon">{hint.icon}</span>
+                <span className="hint-chip-text">{hint.text}</span>
+                {used && <span className="hint-chip-check">✓</span>}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {/* Main Game Area */}
       <div className="game-layout">
-        {/* Left Panel - hidden during intro, visible during start/playing/ended */}
-        {(gamePhase === 'start' || gamePhase === 'playing' || gamePhase === 'ended') && (
-          <div className="left-panel">
-            <ProgressPanel
-              revealedClues={state.revealedClues}
-              revealedCount={revealedCount}
-              totalNodes={totalNodes}
-              isGameOver={state.isGameOver}
-              isWinner={state.isWinner}
-            />
+        {/* Left Side - Vertical Scrollable Hint Cards */}
+        {(state.revealedClues.length > 0 || usedHints.length > 0) && (
+          <div className="hint-cards-sidebar">
+            <div className="hint-cards-sidebar-header">
+              <span>Hints</span>
+              <span className="hint-count">{state.revealedClues.length + usedHints.length}</span>
+            </div>
+            <div className="hint-cards-vertical">
+              {/* Hint Result Cards - from clicking hint buttons */}
+              {usedHints.map((hint, index) => (
+                <div
+                  key={`hint-${hint.id}`}
+                  className="hint-card-vertical hint-card-flipped"
+                  style={{ animationDelay: `${index * 0.05}s` }}
+                >
+                  <div className="hint-card-hint-label">{hint.text}</div>
+                  <div className="hint-card-hint-value">{hint.result}</div>
+                </div>
+              ))}
+              {/* Revealed Clue Cards - from clicking nodes */}
+              {[...state.revealedClues]
+                .sort((a, b) => b.relationshipStrength - a.relationshipStrength)
+                .map((clue, index) => {
+                  const category = categorizeWord(clue.word);
+                  return (
+                    <div
+                      key={`clue-${index}`}
+                      className="hint-card-vertical"
+                      style={{ animationDelay: `${(usedHints.length + index) * 0.05}s` }}
+                    >
+                      <div className="hint-card-word">{clue.word}</div>
+                      <div
+                        className="hint-card-category"
+                        style={{ color: getCategoryColor(category) }}
+                      >
+                        {category}
+                      </div>
+                      <div className="hint-card-strength">
+                        {Math.round(clue.relationshipStrength * 100)}%
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
           </div>
         )}
-
-        {/* Right Panel - Guess/Hints - always visible */}
-        <div className="right-panel">
-          <GuessPanel
-            guess={guess}
-            setGuess={setGuess}
-            onSubmit={(g) => {
-              const isCorrect = makeGuess(g);
-              if (isCorrect) {
-                setFeedback({ type: 'success', message: '🎉 Correct! You solved it!' });
-              } else {
-                setFeedback({ type: 'error', message: '❌ Not quite. Keep exploring!' });
-                setTimeout(() => setFeedback(null), 2000);
-              }
-              setGuess('');
-            }}
-            isGameOver={state.isGameOver}
-            revealedCount={revealedCount}
-            centerWord={state.centerWord}
-            onRevealRandomNode={handleRevealRandomNode}
-            usedHints={usedHints}
-            onUseHint={handleUseHint}
-          />
-        </div>
 
         {/* Center - 3D Graph */}
         <div className="graph-area">
           <GameGraph
             graphData={graphData}
             onNodeClick={handleNodeClick}
+            onNodeHover={handleNodeHover}
             revealedNodes={revealedNodeIds}
-            gamePhase={gamePhase}
-            freezePhysics={freezePhysics}
           />
 
-          {/* Intro Overlay */}
-          {gamePhase === 'intro' && (
-            <div className="intro-overlay">
-              <div className="intro-content">
-                <h1 className="intro-title">Mind Map Mystery</h1>
-                <p className="intro-subtitle">Exploring the unknown...</p>
-                <div className="intro-progress-bar">
-                  <div 
-                    className="intro-progress-fill"
-                    style={{ width: `${introProgress}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Start Button Overlay */}
-          {gamePhase === 'start' && (
-            <div className="start-overlay">
-              <div className="start-content">
-                <h2 className="start-title">Ready to Play?</h2>
-                <p className="start-instructions">
-                  Click on glowing nodes to reveal clues.<br />
-                  Use the clues to guess the mystery word.
-                </p>
-                <button className="start-button" onClick={handleStart}>
-                  Start Game
-                </button>
-              </div>
+          {/* Hover Tooltip */}
+          {hoveredNode && hoveredNode.id !== 'center' && (
+            <div 
+              className="node-tooltip"
+              style={{
+                left: mousePos.x,
+                top: mousePos.y - 40,
+              }}
+            >
+              {hoveredNode.isRevealed ? hoveredNode.word : '???'}
             </div>
           )}
 
@@ -254,7 +267,75 @@ export default function Game() {
             </div>
           )}
         </div>
+
+        {/* Bottom Guess Input - Centered */}
+        <div className="bottom-guess-container">
+          <div className="guess-form-container">
+            <div className="guess-label-row">
+              <div className="guess-timer">{formatTime(state.timeRemaining)}</div>
+              <div className="guess-stat">
+                <span className="guess-stat-label">Guesses</span>
+                <span className="guess-stat-value">{state.guessCount}</span>
+              </div>
+              <div className="guess-stat">
+                <span className="guess-stat-label">Clues</span>
+                <span className="guess-stat-value">{revealedCount}/{totalNodes}</span>
+              </div>
+            </div>
+            <form onSubmit={handleGuessSubmit} className="guess-form-row">
+              <input
+                type="text"
+                value={guess}
+                onChange={(e) => setGuess(e.target.value)}
+                placeholder="What's the mystery word?"
+                className="guess-input-bottom"
+                disabled={state.isGameOver}
+                maxLength={20}
+              />
+              <button
+                type="submit"
+                className="guess-submit-btn"
+                disabled={!guess.trim() || state.isGameOver}
+              >
+                Guess
+              </button>
+            </form>
+          </div>
+        </div>
       </div>
+
+      {/* Color Key Modal */}
+      {showColorKey && (
+        <div className="modal-overlay" onClick={() => setShowColorKey(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <h3 className="modal-title">Thematic Colors</h3>
+            <div className="color-key-list">
+              {[
+                { category: 'biology', label: 'Biology / Nature' },
+                { category: 'science', label: 'Science / Physics' },
+                { category: 'technology', label: 'Technology' },
+                { category: 'sports', label: 'Sports / Movement' },
+                { category: 'food', label: 'Food / Cooking' },
+                { category: 'arts', label: 'Arts / Culture' },
+                { category: 'business', label: 'Business / Strategy' },
+                { category: 'abstract', label: 'Abstract / Emotions' },
+                { category: 'uncategorized', label: 'General' },
+              ].map(({ category, label }) => (
+                <div key={category} className="color-key-item">
+                  <span 
+                    className="color-key-dot" 
+                    style={{ backgroundColor: getCategoryColor(category as WordCategory) }}
+                  />
+                  <span className="color-key-label">{label}</span>
+                </div>
+              ))}
+            </div>
+            <button className="modal-close-btn" onClick={() => setShowColorKey(false)}>
+              Close
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Game Over Overlay */}
       {state.isGameOver && (

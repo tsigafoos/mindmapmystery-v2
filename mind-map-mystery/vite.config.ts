@@ -5,10 +5,7 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
-    include: ['three', '3d-force-graph', 'three-spritetext'],
-    esbuildOptions: {
-      target: 'esnext'
-    }
+    include: ['three', '3d-force-graph'],
   },
   build: {
     commonjsOptions: {
