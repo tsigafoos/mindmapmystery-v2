@@ -2,15 +2,79 @@ import React, { useRef, useMemo } from 'react';
 import * as THREE from 'three';
 import type { SimulationNode } from './ForceGraphSystem';
 import { getNodeColor, rgbToHex } from '../../utils/thematicColors';
+import type { RenderTheme } from '../../types/game';
 
 interface NodeMeshProps {
   node: SimulationNode;
   isRevealed: boolean;
   onPress: () => void;
   isCenter: boolean;
+  renderTheme?: RenderTheme;
 }
 
-export function NodeMesh({ node, isRevealed, onPress, isCenter }: NodeMeshProps) {
+// Material component based on render theme
+function NodeMaterial({ 
+  color, 
+  renderTheme, 
+  isRevealed, 
+  isCenter 
+}: { 
+  color: string; 
+  renderTheme: RenderTheme; 
+  isRevealed: boolean; 
+  isCenter: boolean;
+}) {
+  const emissiveIntensity = isRevealed && !isCenter ? 0.02 : isCenter ? 0.8 : 0.5;
+  const isTransparent = isRevealed && !isCenter;
+  const opacity = isRevealed && !isCenter ? 0.5 : 1.0;
+
+  switch (renderTheme) {
+    case 'phong':
+      return (
+        <meshPhongMaterial
+          color={color}
+          emissive={color}
+          emissiveIntensity={emissiveIntensity}
+          shininess={100}
+          transparent={isTransparent}
+          opacity={opacity}
+        />
+      );
+    case 'toon':
+      return (
+        <meshToonMaterial
+          color={color}
+          emissive={color}
+          emissiveIntensity={emissiveIntensity}
+          transparent={isTransparent}
+          opacity={opacity}
+        />
+      );
+    case 'basic':
+      return (
+        <meshBasicMaterial
+          color={color}
+          transparent={isTransparent}
+          opacity={opacity}
+        />
+      );
+    case 'standard':
+    default:
+      return (
+        <meshStandardMaterial
+          color={color}
+          emissive={color}
+          emissiveIntensity={emissiveIntensity}
+          metalness={0.9}
+          roughness={0.1}
+          transparent={isTransparent}
+          opacity={opacity}
+        />
+      );
+  }
+}
+
+export function NodeMesh({ node, isRevealed, onPress, isCenter, renderTheme = 'standard' }: NodeMeshProps) {
   const meshRef = useRef<THREE.Mesh>(null);
 
   const baseColor = useMemo(() => {
@@ -18,8 +82,8 @@ export function NodeMesh({ node, isRevealed, onPress, isCenter }: NodeMeshProps)
     return rgbToHex(rgb);
   }, [node.category, node.relationshipStrength, isCenter, node.id]);
 
-  // Revealed nodes: gray with 50% opacity
-  const displayColor = isRevealed && !isCenter ? '#707070' : baseColor;
+  // Revealed nodes: 70% gray with 50% opacity
+  const displayColor = isRevealed && !isCenter ? '#b3b3b3' : baseColor;
 
   const size = useMemo(() => {
     if (isCenter) return 15;
@@ -41,29 +105,26 @@ export function NodeMesh({ node, isRevealed, onPress, isCenter }: NodeMeshProps)
       {/* Main sphere */}
       <mesh ref={meshRef} onClick={onPress}>
         <sphereGeometry args={[size, 32, 32]} />
-        <meshStandardMaterial
-          color={displayColor}
-          emissive={displayColor}
-          emissiveIntensity={isRevealed && !isCenter ? 0.02 : isCenter ? 0.8 : 0.5}
-          metalness={0.9}
-          roughness={0.1}
-          transparent={isRevealed && !isCenter}
-          opacity={isRevealed && !isCenter ? 0.5 : 1.0}
+        <NodeMaterial 
+          color={displayColor} 
+          renderTheme={renderTheme}
+          isRevealed={isRevealed}
+          isCenter={isCenter}
         />
       </mesh>
       
-      {/* Inner core for revealed nodes - adds solidity */}
+      {/* Inner core for revealed nodes - 70% gray */}
       {isRevealed && !isCenter && (
         <mesh>
           <sphereGeometry args={[size * 0.6, 32, 32]} />
           <meshStandardMaterial
-            color="#505050"
-            emissive="#404040"
+            color="#b3b3b3"
+            emissive="#8a8a8a"
             emissiveIntensity={0.05}
             metalness={0.5}
             roughness={0.3}
             transparent
-            opacity={0.6}
+            opacity={0.7}
           />
         </mesh>
       )}

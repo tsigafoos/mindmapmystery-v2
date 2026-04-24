@@ -1,14 +1,15 @@
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import type { SimulationNode } from './ForceGraphSystem';
-import type { GraphLink } from '../../types/game';
+import type { GraphLink, RenderTheme } from '../../types/game';
 
 interface LinkLineProps {
   link: GraphLink;
   nodes: SimulationNode[];
+  renderTheme?: RenderTheme;
 }
 
-export function LinkLine({ link, nodes }: LinkLineProps) {
+export function LinkLine({ link, nodes, renderTheme = 'standard' }: LinkLineProps) {
   const points = useMemo(() => {
     const sourceNode = nodes.find(n => n.id === link.source);
     const targetNode = nodes.find(n => n.id === link.target);
@@ -52,14 +53,18 @@ export function LinkLine({ link, nodes }: LinkLineProps) {
 
   if (!geometry) return null;
 
-  // Brighter, thicker lines with glow
+  // Link color and opacity based on render theme
+  const linkColor = renderTheme === 'basic' ? '#44cccc' : '#64f4f4';
+  const linkOpacity = renderTheme === 'basic' ? 0.8 : 0.5;
+  const lineWidth = 2;
+
   return (
     <line geometry={geometry}>
       <lineBasicMaterial 
-        color="#64f4f4" 
+        color={linkColor}
         transparent 
-        opacity={0.5} 
-        linewidth={2}
+        opacity={linkOpacity}
+        linewidth={lineWidth}
       />
     </line>
   );

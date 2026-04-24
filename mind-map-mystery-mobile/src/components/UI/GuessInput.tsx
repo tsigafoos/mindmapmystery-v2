@@ -61,24 +61,15 @@ export function GuessInput({
           <Text style={styles.buttonText}>Guess</Text>
         </TouchableOpacity>
       </View>
-      {/* Extra padding for Android navigation bar */}
-      <View style={styles.bottomPadding} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(10, 10, 31, 0.98)',
     paddingHorizontal: 16,
     paddingTop: 12,
-    paddingBottom: Platform.OS === 'android' ? 8 : 12,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(100, 244, 244, 0.3)',
+    paddingBottom: Platform.OS === 'android' ? 32 : 20,
   },
   statsRow: {
     flexDirection: 'row',
@@ -128,23 +119,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 12,
     justifyContent: 'center',
-    elevation: 3,
-    shadowColor: '#64f4f4',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
   },
   buttonDisabled: {
     backgroundColor: '#444',
-    shadowOpacity: 0,
-    elevation: 0,
   },
   buttonText: {
     color: '#0a0a1f',
     fontWeight: '700',
     fontSize: 16,
-  },
-  bottomPadding: {
-    height: Platform.OS === 'android' ? 20 : 0,
   },
 });

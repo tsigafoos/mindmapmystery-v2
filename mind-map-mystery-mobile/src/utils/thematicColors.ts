@@ -1,5 +1,17 @@
 import type { WordCategory } from '../types/game';
 
+// Scoring constants
+export const SCORING = {
+  BASE_SCORE: 10000,
+  TIME_PENALTY_PER_SECOND: 100,
+  MIN_SCORE: 100,
+  CORRECT_GUESS: 5000,
+  TIER_1_BONUS: 400,
+  TIER_2_BONUS: 200,
+  TIER_3_BONUS: 100,
+  HINT_PENALTY: 300,
+} as const;
+
 // Base colors for each of the 8 thematic categories (soft neon)
 export const CATEGORY_BASE_COLORS: Record<WordCategory, { r: number; g: number; b: number }> = {
   biology:      { r: 100, g: 200, b: 100 },  // Soft grass green

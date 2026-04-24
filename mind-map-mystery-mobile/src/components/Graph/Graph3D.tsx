@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { View, StyleSheet, Text, ActivityIndicator } from 'react-native';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
-import type { GraphData, WordNode } from '../../types/game';
+import type { GraphData, WordNode, RenderTheme } from '../../types/game';
 import { useForceGraph, SimulationNode } from './ForceGraphSystem';
 import { NodeMesh } from './NodeMesh';
 import { LinkLine } from './LinkLine';
@@ -54,9 +54,11 @@ interface Graph3DProps {
   graphData: GraphData;
   revealedNodeIds: string[];
   onNodePress: (node: WordNode) => void;
+  renderTheme?: RenderTheme;
+  isInteractive?: boolean; // For riddle screen - frozen graph
 }
 
-export function Graph3D({ graphData, revealedNodeIds, onNodePress }: Graph3DProps) {
+export function Graph3D({ graphData, revealedNodeIds, onNodePress, renderTheme = 'standard', isInteractive = true }: Graph3DProps) {
   const [simulationNodes, setSimulationNodes] = useState<SimulationNode[]>([]);
   const [isReady, setIsReady] = useState(false);
 
@@ -74,10 +76,11 @@ export function Graph3D({ graphData, revealedNodeIds, onNodePress }: Graph3DProp
   });
 
   const handleNodePress = useCallback((node: SimulationNode) => {
+    if (!isInteractive) return; // Ignore presses when frozen
     if (node.id !== 'center') {
       onNodePress(node as WordNode);
     }
-  }, [onNodePress]);
+  }, [onNodePress, isInteractive]);
 
   return (
     <View style={styles.container}>
@@ -103,7 +106,12 @@ export function Graph3D({ graphData, revealedNodeIds, onNodePress }: Graph3DProp
         <StarField />
 
         {graphData.links.map((link, index) => (
-          <LinkLine key={`link-${index}`} link={link} nodes={simulationNodes} />
+          <LinkLine 
+            key={`link-${index}`} 
+            link={link} 
+            nodes={simulationNodes} 
+            renderTheme={renderTheme}
+          />
         ))}
 
         {simulationNodes.map((node) => (
@@ -113,13 +121,14 @@ export function Graph3D({ graphData, revealedNodeIds, onNodePress }: Graph3DProp
             isRevealed={revealedNodeIds.includes(node.id)}
             isCenter={node.id === 'center'}
             onPress={() => handleNodePress(node)}
+            renderTheme={renderTheme}
           />
         ))}
 
         <OrbitControls
           enablePan={false}
-          enableZoom={true}
-          enableRotate={true}
+          enableZoom={isInteractive}
+          enableRotate={isInteractive}
           autoRotate={false}
           minDistance={120}
           maxDistance={500}
